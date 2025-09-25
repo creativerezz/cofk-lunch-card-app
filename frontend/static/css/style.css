@@ -1,0 +1,80 @@
+/* Custom styles for School Cafeteria NFC Payment System */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1rem;
+}
+
+.menu-item {
+    transition: transform 0.2s;
+}
+
+.menu-item:hover {
+    transform: translateY(-5px);
+}
+
+.spinner-border {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* POS Interface */
+#cartItems {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Dashboard cards */
+.card.bg-primary, 
+.card.bg-success, 
+.card.bg-info, 
+.card.bg-warning {
+    border: none;
+}
+
+/* Responsive tables */
+.table-responsive {
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+/* Modal improvements */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Status badges */
+.badge {
+    padding: 0.35em 0.65em;
+}
+
+/* Footer */
+.footer {
+    background-color: #f8f9fa !important;
+    margin-top: auto;
+}
+
+@media (max-width: 768px) {
+    .navbar-nav {
+        text-align: center;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}

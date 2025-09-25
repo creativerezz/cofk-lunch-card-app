@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Point of Sale{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-cart3"></i> Point of Sale</h2>
+    
+    <div class="row">
+        <!-- Left Panel: Card Scanner & Cart -->
+        <div class="col-lg-4">
+            <!-- Card Scanner -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-credit-card"></i> Card Scanner
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary btn-lg w-100 mb-3" onclick="scanCard()">
+                        <i class="bi bi-wifi"></i> Scan Card
+                    </button>
+                    
+                    <div id="cardInfo" class="d-none">
+                        <div class="alert alert-info">
+                            <h6>Student: <span id="studentName">-</span></h6>
+                            <h6>Balance: $<span id="cardBalance">0.00</span></h6>
+                            <small>Card: <span id="cardUID">-</span></small>
+                        </div>
+                    </div>
+                    
+                    <div id="scanStatus"></div>
+                </div>
+            </div>
+            
+            <!-- Shopping Cart -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-basket"></i> Cart
+                </div>
+                <div class="card-body">
+                    <div id="cartItems" class="mb-3">
+                        <p class="text-muted">No items in cart</p>
+                    </div>
+                    
+                    <div class="border-top pt-2">
+                        <h5>Total: $<span id="cartTotal">0.00</span></h5>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-success w-100" onclick="processPayment()" disabled id="payButton">
+                            <i class="bi bi-cash"></i> Process Payment
+                        </button>
+                        <button class="btn btn-secondary w-100 mt-2" onclick="clearCart()">
+                            <i class="bi bi-trash"></i> Clear Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel: Menu Items -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-category="all" onclick="filterCategory('all')">All</a>
+                        </li>
+                        {% for category in categories %}
+                        <li class="nav-item">
+                            <a class="nav-link" data-category="{{ category }}" onclick="filterCategory('{{ category }}')">
+                                {{ category|title }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="menuItems">
+                        {% for item in menu_items %}
+                        <div class="col-md-4 col-sm-6 mb-3 menu-item" data-category="{{ item.category }}">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ item.name }}</h6>
+                                    <p class="card-text small text-muted">{{ item.description or '' }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-primary">${{ "%.2f"|format(item.price) }}</span>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">
+                                            <i class="bi bi-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCard = null;
+let cart = [];
+
+function scanCard() {
+    $('#scanStatus').html('<div class="spinner-border text-primary" role="status"></div> Scanning...');
+    
+    $.ajax({
+        url: '/api/card/scan',
+        method: 'POST',
+        success: function(data) {
+            if (data.registered) {
+                currentCard = data;
+                $('#cardInfo').removeClass('d-none');
+                $('#studentName').text(data.student ? data.student.name : 'Unknown');
+                $('#cardBalance').text(data.balance.toFixed(2));
+                $('#cardUID').text(data.card_uid);
+                $('#payButton').prop('disabled', false);
+                $('#scanStatus').html('<div class="alert alert-success">Card scanned successfully!</div>');
+            } else {
+                $('#scanStatus').html('<div class="alert alert-warning">Unregistered card. Please register first.</div>');
+            }
+        },
+        error: function() {
+            $('#scanStatus').html('<div class="alert alert-danger">No card detected. Please try again.</div>');
+        }
+    });
+}
+
+function addToCart(itemId, name, price) {
+    let existingItem = cart.find(item => item.id === itemId);
+    
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        cart.push({
+            id: itemId,
+            name: name,
+            price: price,
+            quantity: 1
+        });
+    }
+    
+    updateCartDisplay();
+}
+
+function updateCartDisplay() {
+    let html = '';
+    let total = 0;
+    
+    if (cart.length === 0) {
+        html = '<p class="text-muted">No items in cart</p>';
+    } else {
+        cart.forEach(item => {
+            let itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            html += `
+                <div class="d-flex justify-content-between mb-2">
+                    <div>
+                        <strong>${item.name}</strong>
+                        <small class="text-muted">x${item.quantity}</small>
+                    </div>
+                    <div>
+                        $${itemTotal.toFixed(2)}
+                        <button class="btn btn-sm btn-danger ms-2" onclick="removeFromCart(${item.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    $('#cartItems').html(html);
+    $('#cartTotal').text(total.toFixed(2));
+}
+
+function removeFromCart(itemId) {
+    cart = cart.filter(item => item.id !== itemId);
+    updateCartDisplay();
+}
+
+function clearCart() {
+    cart = [];
+    updateCartDisplay();
+}
+
+function processPayment() {
+    if (!currentCard || cart.length === 0) {
+        alert('Please scan a card and add items to cart');
+        return;
+    }
+    
+    let items = cart.map(item => ({
+        menu_item_id: item.id,
+        quantity: item.quantity
+    }));
+    
+    $.ajax({
+        url: '/api/transaction/purchase',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            card_uid: currentCard.card_uid,
+            items: items
+        }),
+        success: function(data) {
+            alert(`Payment successful! New balance: $${data.new_balance.toFixed(2)}`);
+            currentCard.balance = data.new_balance;
+            $('#cardBalance').text(data.new_balance.toFixed(2));
+            clearCart();
+            
+            if (data.low_balance_warning) {
+                alert('Warning: Low balance! Please reload the card soon.');
+            }
+        },
+        error: function(xhr) {
+            let error = xhr.responseJSON;
+            if (error.error === 'Insufficient balance') {
+                alert(`Insufficient balance! Current: $${error.balance.toFixed(2)}, Required: $${error.required.toFixed(2)}`);
+            } else {
+                alert('Payment failed: ' + error.error);
+            }
+        }
+    });
+}
+
+function filterCategory(category) {
+    $('.nav-link').removeClass('active');
+    $(`[data-category="${category}"]`).addClass('active');
+    
+    if (category === 'all') {
+        $('.menu-item').show();
+    } else {
+        $('.menu-item').hide();
+        $(`.menu-item[data-category="${category}"]`).show();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-people"></i> Total Students</h5>
+                    <h3>{{ total_students }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-credit-card"></i> Active Cards</h5>
+                    <h3>{{ active_cards }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-receipt"></i> Today's Transactions</h5>
+                    <h3>{{ today_transactions }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-cash-stack"></i> Today's Revenue</h5>
+                    <h3>${{ "%.2f"|format(today_revenue) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('pos') }}" class="btn btn-primary">
+                            <i class="bi bi-cart3"></i> Open POS Terminal
+                        </a>
+                        <button class="btn btn-success" onclick="showLoadFundsModal()">
+                            <i class="bi bi-plus-circle"></i> Load Funds to Card
+                        </button>
+                        <button class="btn btn-info" onclick="showRegisterCardModal()">
+                            <i class="bi bi-person-plus"></i> Register New Card
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-activity"></i> System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>NFC Reader:</strong> 
+                        <span id="readerStatus" class="badge bg-secondary">Unknown</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Database:</strong> 
+                        <span class="badge bg-success">Connected</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Offline Transactions:</strong> 
+                        <span id="offlineCount" class="badge bg-warning">0 pending</span>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="checkReaderStatus()">
+                        <i class="bi bi-arrow-clockwise"></i> Check Reader
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="syncOffline()">
+                        <i class="bi bi-cloud-upload"></i> Sync Offline
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load Funds Modal -->
+<div class="modal fade" id="loadFundsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Load Funds to Card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <button class="btn btn-primary w-100" onclick="scanCardForLoad()">
+                        <i class="bi bi-wifi"></i> Scan Card
+                    </button>
+                </div>
+                <div id="loadCardInfo" class="d-none">
+                    <div class="alert alert-info">
+                        <strong>Card:</strong> <span id="loadCardUID"></span><br>
+                        <strong>Current Balance:</strong> $<span id="loadCurrentBalance"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Amount to Load</label>
+                        <input type="number" class="form-control" id="loadAmount" min="0.01" step="0.01">
+                    </div>
+                    <button class="btn btn-success w-100" onclick="confirmLoadFunds()">
+                        <i class="bi bi-check-circle"></i> Load Funds
+                    </button>
+                </div>
+                <div id="loadStatus"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showLoadFundsModal() {
+    $('#loadFundsModal').modal('show');
+}
+
+function checkReaderStatus() {
+    $.ajax({
+        url: '/api/card/scan',
+        method: 'POST',
+        timeout: 2000,
+        success: function() {
+            $('#readerStatus').removeClass('bg-secondary bg-danger').addClass('bg-success').text('Connected');
+        },
+        error: function() {
+            $('#readerStatus').removeClass('bg-secondary bg-success').addClass('bg-danger').text('Disconnected');
+        }
+    });
+}
+
+function syncOffline() {
+    $.ajax({
+        url: '/api/sync/process',
+        method: 'POST',
+        success: function(data) {
+            alert(`Synced ${data.synced} transactions`);
+            location.reload();
+        },
+        error: function() {
+            alert('Sync failed');
+        }
+    });
+}
+
+// Check reader on page load
+$(document).ready(function() {
+    checkReaderStatus();
+});
+</script>
+{% endblock %}

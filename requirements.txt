@@ -1,0 +1,31 @@
+# Core dependencies
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-CORS==4.0.0
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+SQLAlchemy==2.0.23
+Werkzeug==3.0.1
+
+# NFC card reader
+pyscard==2.0.7
+py-acr122u==2.3.0
+
+# Database
+python-dotenv==1.0.0
+
+# Encryption and security
+cryptography==41.0.7
+bcrypt==4.1.2
+
+# Utilities
+click==8.1.7
+python-dateutil==2.8.2
+
+# API and validation
+marshmallow==3.20.1
+marshmallow-sqlalchemy==0.29.0
+
+# For offline sync
+requests==2.31.0
+apscheduler==3.10.4
