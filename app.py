@@ -34,6 +34,7 @@ CORS(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this page.'
 
 # Initialize database
 init_db(app)
@@ -43,7 +44,7 @@ nfc_service = get_nfc_service(os.getenv('NFC_ENCRYPTION_KEY'))
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Operator.query.get(int(user_id))
+    return db.session.get(Operator, int(user_id))
 
 # ==================== Authentication Routes ====================
 
@@ -122,6 +123,41 @@ def pos():
     return render_template('pos.html', menu_items=menu_items, categories=[c[0] for c in categories if c[0]])
 
 # ==================== NFC Card API Routes ====================
+
+@app.route('/api/reader/status', methods=['GET'])
+@login_required
+def reader_status():
+    """Get NFC reader connection status"""
+    try:
+        # Check if reader is already connected
+        if nfc_service.reader:
+            return jsonify({
+                'success': True,
+                'status': 'connected',
+                'reader_name': getattr(nfc_service.reader, 'name', 'NFC Reader')
+            })
+
+        # Try to connect to reader
+        connected = nfc_service.connect_reader()
+
+        if connected and nfc_service.reader:
+            return jsonify({
+                'success': True,
+                'status': 'connected',
+                'reader_name': getattr(nfc_service.reader, 'name', 'NFC Reader')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'status': 'disconnected',
+                'error': 'No NFC reader found'
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'status': 'error',
+            'error': str(e)
+        })
 
 @app.route('/api/card/scan', methods=['POST'])
 @login_required
@@ -807,7 +843,7 @@ if __name__ == '__main__':
     
     # Run the app
     app.run(
-        host='0.0.0.0',
-        port=5000,
+        host=os.getenv('HOST', '127.0.0.1'),
+        port=int(os.getenv('PORT', 5055)),
         debug=os.getenv('FLASK_ENV') == 'development'
     )

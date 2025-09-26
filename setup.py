@@ -143,7 +143,7 @@ def main():
     print("  Password: operator123")
     print("\nTo start the server:")
     print("  python app.py")
-    print("\nThen access: http://localhost:5000")
+    print("\nThen access: http://localhost:5055")
     print("=" * 50)
 
 if __name__ == "__main__":

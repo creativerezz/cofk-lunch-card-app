@@ -41,7 +41,7 @@ class Student(db.Model):
     email = db.Column(db.String(120))
     parent_email = db.Column(db.String(120))
     parent_phone = db.Column(db.String(20))
-    low_balance_threshold = db.Column(db.Decimal(10, 2), default=10.00)
+    low_balance_threshold = db.Column(db.Numeric(10, 2), default=10.00)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -69,7 +69,7 @@ class Card(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     card_uid = db.Column(db.String(50), unique=True, nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'))
-    balance = db.Column(db.Decimal(10, 2), default=0.00, nullable=False)
+    balance = db.Column(db.Numeric(10, 2), default=0.00, nullable=False)
     status = db.Column(db.String(20), default=CardStatus.ACTIVE.value)
     pin_hash = db.Column(db.String(255))  # Optional PIN for security
     issued_date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -112,7 +112,7 @@ class MenuItem(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category = db.Column(db.String(50))  # breakfast, lunch, snack, drink
-    price = db.Column(db.Decimal(10, 2), nullable=False)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
     is_available = db.Column(db.Boolean, default=True)
     stock_quantity = db.Column(db.Integer)  # Optional stock tracking
     image_url = db.Column(db.String(255))
@@ -133,9 +133,9 @@ class Transaction(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'))
     operator_id = db.Column(db.Integer, db.ForeignKey('operators.id'))
     transaction_type = db.Column(db.String(20), nullable=False)
-    amount = db.Column(db.Decimal(10, 2), nullable=False)
-    balance_before = db.Column(db.Decimal(10, 2))
-    balance_after = db.Column(db.Decimal(10, 2))
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    balance_before = db.Column(db.Numeric(10, 2))
+    balance_after = db.Column(db.Numeric(10, 2))
     description = db.Column(db.Text)
     is_synced = db.Column(db.Boolean, default=False)  # For offline sync
     synced_at = db.Column(db.DateTime)
@@ -154,8 +154,8 @@ class TransactionItem(db.Model):
     transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), nullable=False)
     menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_items.id'), nullable=False)
     quantity = db.Column(db.Integer, default=1)
-    unit_price = db.Column(db.Decimal(10, 2), nullable=False)
-    total_price = db.Column(db.Decimal(10, 2), nullable=False)
+    unit_price = db.Column(db.Numeric(10, 2), nullable=False)
+    total_price = db.Column(db.Numeric(10, 2), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Operator(db.Model, UserMixin):

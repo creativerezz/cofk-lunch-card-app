@@ -128,18 +128,66 @@
     </div>
 </div>
 
+<!-- Register Card Modal -->
+<div class="modal fade" id="registerCardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Register New Card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <button class="btn btn-primary w-100" onclick="scanCardForRegister()">
+                        <i class="bi bi-wifi"></i> Scan New Card
+                    </button>
+                </div>
+                <div id="registerCardInfo" class="d-none">
+                    <div class="alert alert-info">
+                        <strong>New Card UID:</strong> <span id="registerCardUID"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="registerStudentId" placeholder="Enter student ID">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Initial Balance</label>
+                        <input type="number" class="form-control" id="registerInitialBalance" min="0" step="0.01" value="0.00">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">PIN (Optional)</label>
+                        <input type="password" class="form-control" id="registerPin" placeholder="4-digit PIN">
+                    </div>
+                    <button class="btn btn-success w-100" onclick="confirmRegisterCard()">
+                        <i class="bi bi-check-circle"></i> Register Card
+                    </button>
+                </div>
+                <div id="registerStatus"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function showLoadFundsModal() {
     $('#loadFundsModal').modal('show');
 }
 
+function showRegisterCardModal() {
+    $('#registerCardModal').modal('show');
+}
+
 function checkReaderStatus() {
     $.ajax({
-        url: '/api/card/scan',
-        method: 'POST',
+        url: '/api/reader/status',
+        method: 'GET',
         timeout: 2000,
-        success: function() {
-            $('#readerStatus').removeClass('bg-secondary bg-danger').addClass('bg-success').text('Connected');
+        success: function(data) {
+            if (data.success) {
+                $('#readerStatus').removeClass('bg-secondary bg-danger').addClass('bg-success').text('Connected');
+            } else {
+                $('#readerStatus').removeClass('bg-secondary bg-success').addClass('bg-danger').text('Disconnected');
+            }
         },
         error: function() {
             $('#readerStatus').removeClass('bg-secondary bg-success').addClass('bg-danger').text('Disconnected');
@@ -157,6 +205,84 @@ function syncOffline() {
         },
         error: function() {
             alert('Sync failed');
+        }
+    });
+}
+
+// Register Card Functions
+function scanCardForRegister() {
+    $('#registerStatus').html('<div class="alert alert-info">Scanning for card...</div>');
+
+    $.ajax({
+        url: '/api/card/scan',
+        method: 'POST',
+        timeout: 10000,
+        success: function(data) {
+            if (data.success) {
+                if (data.registered) {
+                    $('#registerStatus').html('<div class="alert alert-warning">This card is already registered!</div>');
+                } else {
+                    $('#registerCardUID').text(data.card_uid);
+                    $('#registerCardInfo').removeClass('d-none');
+                    $('#registerStatus').html('<div class="alert alert-success">Card scanned successfully! Please fill in the details below.</div>');
+                }
+            } else {
+                $('#registerStatus').html('<div class="alert alert-danger">Error: ' + data.error + '</div>');
+            }
+        },
+        error: function(xhr, status, error) {
+            if (status === 'timeout') {
+                $('#registerStatus').html('<div class="alert alert-warning">No card detected. Please try again.</div>');
+            } else {
+                $('#registerStatus').html('<div class="alert alert-danger">Error scanning card: ' + error + '</div>');
+            }
+        }
+    });
+}
+
+function confirmRegisterCard() {
+    const cardUID = $('#registerCardUID').text();
+    const studentId = $('#registerStudentId').val();
+    const initialBalance = parseFloat($('#registerInitialBalance').val()) || 0;
+    const pin = $('#registerPin').val();
+
+    if (!studentId) {
+        $('#registerStatus').html('<div class="alert alert-danger">Please enter a student ID.</div>');
+        return;
+    }
+
+    if (!cardUID) {
+        $('#registerStatus').html('<div class="alert alert-danger">No card scanned. Please scan a card first.</div>');
+        return;
+    }
+
+    const registerData = {
+        card_uid: cardUID,
+        student_id: studentId,
+        initial_balance: initialBalance,
+        pin: pin || null
+    };
+
+    $('#registerStatus').html('<div class="alert alert-info">Registering card...</div>');
+
+    $.ajax({
+        url: '/api/card/register',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(registerData),
+        success: function(data) {
+            if (data.success) {
+                $('#registerStatus').html('<div class="alert alert-success">Card registered successfully!</div>');
+                setTimeout(function() {
+                    $('#registerCardModal').modal('hide');
+                    location.reload();
+                }, 2000);
+            } else {
+                $('#registerStatus').html('<div class="alert alert-danger">Registration failed: ' + data.error + '</div>');
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#registerStatus').html('<div class="alert alert-danger">Error registering card: ' + error + '</div>');
         }
     });
 }

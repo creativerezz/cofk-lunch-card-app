@@ -32,9 +32,12 @@ python setup.py
 
 ```bash
 # Start the Flask web application
-python app.py
-# The app runs on http://localhost:5000 by default
+./scripts/devshell.sh python app.py
+# The app runs on http://localhost:5055 by default
 ```
+Set a custom port by exporting `PORT`, e.g., `PORT=8081 ./scripts/devshell.sh python app.py`.
+
+The helper script `scripts/devshell.sh` auto-activates the virtual environment (creating it if missing), installs dependencies when `requirements.txt` changes, and then runs the command you pass in. Run it with no arguments to spawn an interactive shell inside the venv.
 
 ### NFC Reader Operations
 
@@ -100,7 +103,7 @@ After running `setup.py`:
 - **Operator**: username `operator`, password `operator123`
 
 ### Key Configuration
-- Default port: 5000
+- Default port: 5055
 - Database path: `sqlite:///database/cafeteria.db`
 - NFC encryption key must be set in `.env` (auto-generated if not provided)
 
